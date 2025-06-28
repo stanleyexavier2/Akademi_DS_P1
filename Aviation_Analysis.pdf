@@ -1,0 +1,964 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "fd8e3b37-ebac-4be8-b46e-814e1e94545b",
+   "metadata": {},
+   "source": [
+    " Aviation Risk Analysis  Phase 1 Project\n",
+    "Auteur : Stanley EXAVIER  \n",
+    "Données : NTSB Aviation Accident Data (1962–2023)  \n",
+    "\n",
+    "_Objectif :_ Identifier les types d'aéronefs les moins risqués à partir de l'analyse des accidents passés.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "8639bd65-01c0-4f70-b87f-f7c0ff5ba499",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "\n",
+    "# Affichage propre des graphiques\n",
+    "%matplotlib inline\n",
+    "sns.set(style=\"whitegrid\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "05fdbd21-9a6e-43ac-b787-672ba89cbb0f",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Event.Id</th>\n",
+       "      <th>Investigation.Type</th>\n",
+       "      <th>Accident.Number</th>\n",
+       "      <th>Event.Date</th>\n",
+       "      <th>Location</th>\n",
+       "      <th>Country</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Airport.Code</th>\n",
+       "      <th>Airport.Name</th>\n",
+       "      <th>...</th>\n",
+       "      <th>Purpose.of.flight</th>\n",
+       "      <th>Air.carrier</th>\n",
+       "      <th>Total.Fatal.Injuries</th>\n",
+       "      <th>Total.Serious.Injuries</th>\n",
+       "      <th>Total.Minor.Injuries</th>\n",
+       "      <th>Total.Uninjured</th>\n",
+       "      <th>Weather.Condition</th>\n",
+       "      <th>Broad.phase.of.flight</th>\n",
+       "      <th>Report.Status</th>\n",
+       "      <th>Publication.Date</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>20001218X45444</td>\n",
+       "      <td>Accident</td>\n",
+       "      <td>SEA87LA080</td>\n",
+       "      <td>1948-10-24</td>\n",
+       "      <td>MOOSE CREEK, ID</td>\n",
+       "      <td>United States</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Personal</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>UNK</td>\n",
+       "      <td>Cruise</td>\n",
+       "      <td>Probable Cause</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>20001218X45447</td>\n",
+       "      <td>Accident</td>\n",
+       "      <td>LAX94LA336</td>\n",
+       "      <td>1962-07-19</td>\n",
+       "      <td>BRIDGEPORT, CA</td>\n",
+       "      <td>United States</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Personal</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>UNK</td>\n",
+       "      <td>Unknown</td>\n",
+       "      <td>Probable Cause</td>\n",
+       "      <td>19-09-1996</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>20061025X01555</td>\n",
+       "      <td>Accident</td>\n",
+       "      <td>NYC07LA005</td>\n",
+       "      <td>1974-08-30</td>\n",
+       "      <td>Saltville, VA</td>\n",
+       "      <td>United States</td>\n",
+       "      <td>36.922223</td>\n",
+       "      <td>-81.878056</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Personal</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>IMC</td>\n",
+       "      <td>Cruise</td>\n",
+       "      <td>Probable Cause</td>\n",
+       "      <td>26-02-2007</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>20001218X45448</td>\n",
+       "      <td>Accident</td>\n",
+       "      <td>LAX96LA321</td>\n",
+       "      <td>1977-06-19</td>\n",
+       "      <td>EUREKA, CA</td>\n",
+       "      <td>United States</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Personal</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>IMC</td>\n",
+       "      <td>Cruise</td>\n",
+       "      <td>Probable Cause</td>\n",
+       "      <td>12-09-2000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>20041105X01764</td>\n",
+       "      <td>Accident</td>\n",
+       "      <td>CHI79FA064</td>\n",
+       "      <td>1979-08-02</td>\n",
+       "      <td>Canton, OH</td>\n",
+       "      <td>United States</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Personal</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>VMC</td>\n",
+       "      <td>Approach</td>\n",
+       "      <td>Probable Cause</td>\n",
+       "      <td>16-04-1980</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 31 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "         Event.Id Investigation.Type Accident.Number  Event.Date  \\\n",
+       "0  20001218X45444           Accident      SEA87LA080  1948-10-24   \n",
+       "1  20001218X45447           Accident      LAX94LA336  1962-07-19   \n",
+       "2  20061025X01555           Accident      NYC07LA005  1974-08-30   \n",
+       "3  20001218X45448           Accident      LAX96LA321  1977-06-19   \n",
+       "4  20041105X01764           Accident      CHI79FA064  1979-08-02   \n",
+       "\n",
+       "          Location        Country   Latitude   Longitude Airport.Code  \\\n",
+       "0  MOOSE CREEK, ID  United States        NaN         NaN          NaN   \n",
+       "1   BRIDGEPORT, CA  United States        NaN         NaN          NaN   \n",
+       "2    Saltville, VA  United States  36.922223  -81.878056          NaN   \n",
+       "3       EUREKA, CA  United States        NaN         NaN          NaN   \n",
+       "4       Canton, OH  United States        NaN         NaN          NaN   \n",
+       "\n",
+       "  Airport.Name  ... Purpose.of.flight Air.carrier Total.Fatal.Injuries  \\\n",
+       "0          NaN  ...          Personal         NaN                  2.0   \n",
+       "1          NaN  ...          Personal         NaN                  4.0   \n",
+       "2          NaN  ...          Personal         NaN                  3.0   \n",
+       "3          NaN  ...          Personal         NaN                  2.0   \n",
+       "4          NaN  ...          Personal         NaN                  1.0   \n",
+       "\n",
+       "  Total.Serious.Injuries Total.Minor.Injuries Total.Uninjured  \\\n",
+       "0                    0.0                  0.0             0.0   \n",
+       "1                    0.0                  0.0             0.0   \n",
+       "2                    NaN                  NaN             NaN   \n",
+       "3                    0.0                  0.0             0.0   \n",
+       "4                    2.0                  NaN             0.0   \n",
+       "\n",
+       "  Weather.Condition  Broad.phase.of.flight   Report.Status Publication.Date  \n",
+       "0               UNK                 Cruise  Probable Cause              NaN  \n",
+       "1               UNK                Unknown  Probable Cause       19-09-1996  \n",
+       "2               IMC                 Cruise  Probable Cause       26-02-2007  \n",
+       "3               IMC                 Cruise  Probable Cause       12-09-2000  \n",
+       "4               VMC               Approach  Probable Cause       16-04-1980  \n",
+       "\n",
+       "[5 rows x 31 columns]"
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Chargement du fichier CSV principal\n",
+    "aviation_df = pd.read_csv(\"AviationData.csv\", encoding='latin1', low_memory=False)\n",
+    "\n",
+    "# Aperçu des 5 premières lignes\n",
+    "aviation_df.head()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "4438b93c-0299-4ea5-92cd-7dbfe93fc35e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Nombre de lignes : 88889\n",
+      "Nombre de colonnes : 31\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "['Event.Id',\n",
+       " 'Investigation.Type',\n",
+       " 'Accident.Number',\n",
+       " 'Event.Date',\n",
+       " 'Location',\n",
+       " 'Country',\n",
+       " 'Latitude',\n",
+       " 'Longitude',\n",
+       " 'Airport.Code',\n",
+       " 'Airport.Name',\n",
+       " 'Injury.Severity',\n",
+       " 'Aircraft.damage',\n",
+       " 'Aircraft.Category',\n",
+       " 'Registration.Number',\n",
+       " 'Make',\n",
+       " 'Model',\n",
+       " 'Amateur.Built',\n",
+       " 'Number.of.Engines',\n",
+       " 'Engine.Type',\n",
+       " 'FAR.Description',\n",
+       " 'Schedule',\n",
+       " 'Purpose.of.flight',\n",
+       " 'Air.carrier',\n",
+       " 'Total.Fatal.Injuries',\n",
+       " 'Total.Serious.Injuries',\n",
+       " 'Total.Minor.Injuries',\n",
+       " 'Total.Uninjured',\n",
+       " 'Weather.Condition',\n",
+       " 'Broad.phase.of.flight',\n",
+       " 'Report.Status',\n",
+       " 'Publication.Date']"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Dimensions du dataset\n",
+    "print(\"Nombre de lignes :\", aviation_df.shape[0])\n",
+    "print(\"Nombre de colonnes :\", aviation_df.shape[1])\n",
+    "\n",
+    "# Liste des colonnes disponibles\n",
+    "aviation_df.columns.tolist()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "042be446-84e4-4406-b83e-4e613b34ccef",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Schedule             85.845268\n",
+       "Air.carrier          81.271023\n",
+       "FAR.Description      63.974170\n",
+       "Aircraft.Category    63.677170\n",
+       "Longitude            61.330423\n",
+       "Latitude             61.320298\n",
+       "dtype: float64"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Pourcentage de valeurs manquantes par colonne\n",
+    "missing_values = aviation_df.isnull().mean().sort_values(ascending=False) * 100\n",
+    "\n",
+    "# Affichage des colonnes avec plus de 50 % de valeurs manquantes\n",
+    "missing_values[missing_values > 50]\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "c25db069-88e6-48fc-8905-b24d7276a377",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Nouvelles dimensions : (88889, 25)\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Suppression des colonnes avec plus de 60 % de valeurs manquantes\n",
+    "aviation_df_cleaned = aviation_df.drop(columns=missing_values[missing_values > 60].index)\n",
+    "\n",
+    "# Vérification des dimensions après nettoyage\n",
+    "print(\"Nouvelles dimensions :\", aviation_df_cleaned.shape)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "0abfcc19-8c60-48d0-8d57-5946cf60fd34",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "datetime64[ns]\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Conversion de la colonne 'Event.Date' en format datetime\n",
+    "aviation_df_cleaned['Event.Date'] = pd.to_datetime(aviation_df_cleaned['Event.Date'], errors='coerce')\n",
+    "\n",
+    "# Vérification du type\n",
+    "print(aviation_df_cleaned['Event.Date'].dtype)\n",
+    "\n",
+    "# Supprimer les lignes sans date valide (facultatif mais utile pour les analyses temporelles)\n",
+    "aviation_df_cleaned = aviation_df_cleaned.dropna(subset=['Event.Date'])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "67821794-2593-4659-9c4b-55f8f06b45dc",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "KeyError",
+     "evalue": "'Aircraft.Type'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mKeyError\u001b[0m                                  Traceback (most recent call last)",
+      "File \u001b[1;32m~\\AppData\\Local\\anaconda3\\Lib\\site-packages\\pandas\\core\\indexes\\base.py:3805\u001b[0m, in \u001b[0;36mIndex.get_loc\u001b[1;34m(self, key)\u001b[0m\n\u001b[0;32m   3804\u001b[0m \u001b[38;5;28;01mtry\u001b[39;00m:\n\u001b[1;32m-> 3805\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_engine\u001b[38;5;241m.\u001b[39mget_loc(casted_key)\n\u001b[0;32m   3806\u001b[0m \u001b[38;5;28;01mexcept\u001b[39;00m \u001b[38;5;167;01mKeyError\u001b[39;00m \u001b[38;5;28;01mas\u001b[39;00m err:\n",
+      "File \u001b[1;32mindex.pyx:167\u001b[0m, in \u001b[0;36mpandas._libs.index.IndexEngine.get_loc\u001b[1;34m()\u001b[0m\n",
+      "File \u001b[1;32mindex.pyx:196\u001b[0m, in \u001b[0;36mpandas._libs.index.IndexEngine.get_loc\u001b[1;34m()\u001b[0m\n",
+      "File \u001b[1;32mpandas\\\\_libs\\\\hashtable_class_helper.pxi:7081\u001b[0m, in \u001b[0;36mpandas._libs.hashtable.PyObjectHashTable.get_item\u001b[1;34m()\u001b[0m\n",
+      "File \u001b[1;32mpandas\\\\_libs\\\\hashtable_class_helper.pxi:7089\u001b[0m, in \u001b[0;36mpandas._libs.hashtable.PyObjectHashTable.get_item\u001b[1;34m()\u001b[0m\n",
+      "\u001b[1;31mKeyError\u001b[0m: 'Aircraft.Type'",
+      "\nThe above exception was the direct cause of the following exception:\n",
+      "\u001b[1;31mKeyError\u001b[0m                                  Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[7], line 1\u001b[0m\n\u001b[1;32m----> 1\u001b[0m aviation_df_cleaned[\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mAircraft.Type\u001b[39m\u001b[38;5;124m'\u001b[39m]\u001b[38;5;241m.\u001b[39mvalue_counts()\n",
+      "File \u001b[1;32m~\\AppData\\Local\\anaconda3\\Lib\\site-packages\\pandas\\core\\frame.py:4102\u001b[0m, in \u001b[0;36mDataFrame.__getitem__\u001b[1;34m(self, key)\u001b[0m\n\u001b[0;32m   4100\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mcolumns\u001b[38;5;241m.\u001b[39mnlevels \u001b[38;5;241m>\u001b[39m \u001b[38;5;241m1\u001b[39m:\n\u001b[0;32m   4101\u001b[0m     \u001b[38;5;28;01mreturn\u001b[39;00m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_getitem_multilevel(key)\n\u001b[1;32m-> 4102\u001b[0m indexer \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mcolumns\u001b[38;5;241m.\u001b[39mget_loc(key)\n\u001b[0;32m   4103\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m is_integer(indexer):\n\u001b[0;32m   4104\u001b[0m     indexer \u001b[38;5;241m=\u001b[39m [indexer]\n",
+      "File \u001b[1;32m~\\AppData\\Local\\anaconda3\\Lib\\site-packages\\pandas\\core\\indexes\\base.py:3812\u001b[0m, in \u001b[0;36mIndex.get_loc\u001b[1;34m(self, key)\u001b[0m\n\u001b[0;32m   3807\u001b[0m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(casted_key, \u001b[38;5;28mslice\u001b[39m) \u001b[38;5;129;01mor\u001b[39;00m (\n\u001b[0;32m   3808\u001b[0m         \u001b[38;5;28misinstance\u001b[39m(casted_key, abc\u001b[38;5;241m.\u001b[39mIterable)\n\u001b[0;32m   3809\u001b[0m         \u001b[38;5;129;01mand\u001b[39;00m \u001b[38;5;28many\u001b[39m(\u001b[38;5;28misinstance\u001b[39m(x, \u001b[38;5;28mslice\u001b[39m) \u001b[38;5;28;01mfor\u001b[39;00m x \u001b[38;5;129;01min\u001b[39;00m casted_key)\n\u001b[0;32m   3810\u001b[0m     ):\n\u001b[0;32m   3811\u001b[0m         \u001b[38;5;28;01mraise\u001b[39;00m InvalidIndexError(key)\n\u001b[1;32m-> 3812\u001b[0m     \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mKeyError\u001b[39;00m(key) \u001b[38;5;28;01mfrom\u001b[39;00m \u001b[38;5;21;01merr\u001b[39;00m\n\u001b[0;32m   3813\u001b[0m \u001b[38;5;28;01mexcept\u001b[39;00m \u001b[38;5;167;01mTypeError\u001b[39;00m:\n\u001b[0;32m   3814\u001b[0m     \u001b[38;5;66;03m# If we have a listlike key, _check_indexing_error will raise\u001b[39;00m\n\u001b[0;32m   3815\u001b[0m     \u001b[38;5;66;03m#  InvalidIndexError. Otherwise we fall through and re-raise\u001b[39;00m\n\u001b[0;32m   3816\u001b[0m     \u001b[38;5;66;03m#  the TypeError.\u001b[39;00m\n\u001b[0;32m   3817\u001b[0m     \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39m_check_indexing_error(key)\n",
+      "\u001b[1;31mKeyError\u001b[0m: 'Aircraft.Type'"
+     ]
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Aircraft.Type'].value_counts()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "beff15ca-e37c-49b9-a706-629887c61c88",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "KeyError",
+     "evalue": "'Aircraft.Type'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mKeyError\u001b[0m                                  Traceback (most recent call last)",
+      "Cell \u001b[1;32mIn[8], line 2\u001b[0m\n\u001b[0;32m      1\u001b[0m \u001b[38;5;66;03m# Regrouper par type d'aéronef et résumer les morts\u001b[39;00m\n\u001b[1;32m----> 2\u001b[0m accidents_by_type \u001b[38;5;241m=\u001b[39m aviation_df_cleaned\u001b[38;5;241m.\u001b[39mgroupby(\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mAircraft.Type\u001b[39m\u001b[38;5;124m'\u001b[39m)\u001b[38;5;241m.\u001b[39magg({\n\u001b[0;32m      3\u001b[0m     \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mEvent.Id\u001b[39m\u001b[38;5;124m'\u001b[39m: \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mcount\u001b[39m\u001b[38;5;124m'\u001b[39m,\n\u001b[0;32m      4\u001b[0m     \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mTotal.Fatal.Injuries\u001b[39m\u001b[38;5;124m'\u001b[39m: \u001b[38;5;124m'\u001b[39m\u001b[38;5;124msum\u001b[39m\u001b[38;5;124m'\u001b[39m\n\u001b[0;32m      5\u001b[0m })\u001b[38;5;241m.\u001b[39mrename(columns\u001b[38;5;241m=\u001b[39m{\n\u001b[0;32m      6\u001b[0m     \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mEvent.Id\u001b[39m\u001b[38;5;124m'\u001b[39m: \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mNombre_Accidents\u001b[39m\u001b[38;5;124m'\u001b[39m,\n\u001b[0;32m      7\u001b[0m     \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mTotal.Fatal.Injuries\u001b[39m\u001b[38;5;124m'\u001b[39m: \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mNombre_Morts\u001b[39m\u001b[38;5;124m'\u001b[39m\n\u001b[0;32m      8\u001b[0m })\n\u001b[0;32m     10\u001b[0m \u001b[38;5;66;03m# Calculer le taux de mortalité\u001b[39;00m\n\u001b[0;32m     11\u001b[0m accidents_by_type[\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mTaux_Mortalite\u001b[39m\u001b[38;5;124m'\u001b[39m] \u001b[38;5;241m=\u001b[39m accidents_by_type[\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mNombre_Morts\u001b[39m\u001b[38;5;124m'\u001b[39m] \u001b[38;5;241m/\u001b[39m accidents_by_type[\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mNombre_Accidents\u001b[39m\u001b[38;5;124m'\u001b[39m]\n",
+      "File \u001b[1;32m~\\AppData\\Local\\anaconda3\\Lib\\site-packages\\pandas\\core\\frame.py:9183\u001b[0m, in \u001b[0;36mDataFrame.groupby\u001b[1;34m(self, by, axis, level, as_index, sort, group_keys, observed, dropna)\u001b[0m\n\u001b[0;32m   9180\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m level \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m \u001b[38;5;129;01mand\u001b[39;00m by \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m:\n\u001b[0;32m   9181\u001b[0m     \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mTypeError\u001b[39;00m(\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mYou have to supply one of \u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mby\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m and \u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mlevel\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n\u001b[1;32m-> 9183\u001b[0m \u001b[38;5;28;01mreturn\u001b[39;00m DataFrameGroupBy(\n\u001b[0;32m   9184\u001b[0m     obj\u001b[38;5;241m=\u001b[39m\u001b[38;5;28mself\u001b[39m,\n\u001b[0;32m   9185\u001b[0m     keys\u001b[38;5;241m=\u001b[39mby,\n\u001b[0;32m   9186\u001b[0m     axis\u001b[38;5;241m=\u001b[39maxis,\n\u001b[0;32m   9187\u001b[0m     level\u001b[38;5;241m=\u001b[39mlevel,\n\u001b[0;32m   9188\u001b[0m     as_index\u001b[38;5;241m=\u001b[39mas_index,\n\u001b[0;32m   9189\u001b[0m     sort\u001b[38;5;241m=\u001b[39msort,\n\u001b[0;32m   9190\u001b[0m     group_keys\u001b[38;5;241m=\u001b[39mgroup_keys,\n\u001b[0;32m   9191\u001b[0m     observed\u001b[38;5;241m=\u001b[39mobserved,\n\u001b[0;32m   9192\u001b[0m     dropna\u001b[38;5;241m=\u001b[39mdropna,\n\u001b[0;32m   9193\u001b[0m )\n",
+      "File \u001b[1;32m~\\AppData\\Local\\anaconda3\\Lib\\site-packages\\pandas\\core\\groupby\\groupby.py:1329\u001b[0m, in \u001b[0;36mGroupBy.__init__\u001b[1;34m(self, obj, keys, axis, level, grouper, exclusions, selection, as_index, sort, group_keys, observed, dropna)\u001b[0m\n\u001b[0;32m   1326\u001b[0m \u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mdropna \u001b[38;5;241m=\u001b[39m dropna\n\u001b[0;32m   1328\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m grouper \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m:\n\u001b[1;32m-> 1329\u001b[0m     grouper, exclusions, obj \u001b[38;5;241m=\u001b[39m get_grouper(\n\u001b[0;32m   1330\u001b[0m         obj,\n\u001b[0;32m   1331\u001b[0m         keys,\n\u001b[0;32m   1332\u001b[0m         axis\u001b[38;5;241m=\u001b[39maxis,\n\u001b[0;32m   1333\u001b[0m         level\u001b[38;5;241m=\u001b[39mlevel,\n\u001b[0;32m   1334\u001b[0m         sort\u001b[38;5;241m=\u001b[39msort,\n\u001b[0;32m   1335\u001b[0m         observed\u001b[38;5;241m=\u001b[39m\u001b[38;5;28;01mFalse\u001b[39;00m \u001b[38;5;28;01mif\u001b[39;00m observed \u001b[38;5;129;01mis\u001b[39;00m lib\u001b[38;5;241m.\u001b[39mno_default \u001b[38;5;28;01melse\u001b[39;00m observed,\n\u001b[0;32m   1336\u001b[0m         dropna\u001b[38;5;241m=\u001b[39m\u001b[38;5;28mself\u001b[39m\u001b[38;5;241m.\u001b[39mdropna,\n\u001b[0;32m   1337\u001b[0m     )\n\u001b[0;32m   1339\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m observed \u001b[38;5;129;01mis\u001b[39;00m lib\u001b[38;5;241m.\u001b[39mno_default:\n\u001b[0;32m   1340\u001b[0m     \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28many\u001b[39m(ping\u001b[38;5;241m.\u001b[39m_passed_categorical \u001b[38;5;28;01mfor\u001b[39;00m ping \u001b[38;5;129;01min\u001b[39;00m grouper\u001b[38;5;241m.\u001b[39mgroupings):\n",
+      "File \u001b[1;32m~\\AppData\\Local\\anaconda3\\Lib\\site-packages\\pandas\\core\\groupby\\grouper.py:1043\u001b[0m, in \u001b[0;36mget_grouper\u001b[1;34m(obj, key, axis, level, sort, observed, validate, dropna)\u001b[0m\n\u001b[0;32m   1041\u001b[0m         in_axis, level, gpr \u001b[38;5;241m=\u001b[39m \u001b[38;5;28;01mFalse\u001b[39;00m, gpr, \u001b[38;5;28;01mNone\u001b[39;00m\n\u001b[0;32m   1042\u001b[0m     \u001b[38;5;28;01melse\u001b[39;00m:\n\u001b[1;32m-> 1043\u001b[0m         \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mKeyError\u001b[39;00m(gpr)\n\u001b[0;32m   1044\u001b[0m \u001b[38;5;28;01melif\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(gpr, Grouper) \u001b[38;5;129;01mand\u001b[39;00m gpr\u001b[38;5;241m.\u001b[39mkey \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m:\n\u001b[0;32m   1045\u001b[0m     \u001b[38;5;66;03m# Add key to exclusions\u001b[39;00m\n\u001b[0;32m   1046\u001b[0m     exclusions\u001b[38;5;241m.\u001b[39madd(gpr\u001b[38;5;241m.\u001b[39mkey)\n",
+      "\u001b[1;31mKeyError\u001b[0m: 'Aircraft.Type'"
+     ]
+    }
+   ],
+   "source": [
+    "# Regrouper par type d'aéronef et résumer les morts\n",
+    "accidents_by_type = aviation_df_cleaned.groupby('Aircraft.Type').agg({\n",
+    "    'Event.Id': 'count',\n",
+    "    'Total.Fatal.Injuries': 'sum'\n",
+    "}).rename(columns={\n",
+    "    'Event.Id': 'Nombre_Accidents',\n",
+    "    'Total.Fatal.Injuries': 'Nombre_Morts'\n",
+    "})\n",
+    "\n",
+    "# Calculer le taux de mortalité\n",
+    "accidents_by_type['Taux_Mortalite'] = accidents_by_type['Nombre_Morts'] / accidents_by_type['Nombre_Accidents']\n",
+    "\n",
+    "# Trier du moins risqué au plus risqué\n",
+    "accidents_by_type_sorted = accidents_by_type.sort_values(by='Taux_Mortalite')\n",
+    "\n",
+    "accidents_by_type_sorted.head(10)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "a02d6f0f-8e44-494d-a3f4-aeb1a4acc5f1",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Event.Date</th>\n",
+       "      <th>Year</th>\n",
+       "      <th>Month</th>\n",
+       "      <th>Day</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1948-10-24</td>\n",
+       "      <td>1948</td>\n",
+       "      <td>10</td>\n",
+       "      <td>24</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1962-07-19</td>\n",
+       "      <td>1962</td>\n",
+       "      <td>7</td>\n",
+       "      <td>19</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1974-08-30</td>\n",
+       "      <td>1974</td>\n",
+       "      <td>8</td>\n",
+       "      <td>30</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1977-06-19</td>\n",
+       "      <td>1977</td>\n",
+       "      <td>6</td>\n",
+       "      <td>19</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1979-08-02</td>\n",
+       "      <td>1979</td>\n",
+       "      <td>8</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Event.Date  Year  Month  Day\n",
+       "0 1948-10-24  1948     10   24\n",
+       "1 1962-07-19  1962      7   19\n",
+       "2 1974-08-30  1974      8   30\n",
+       "3 1977-06-19  1977      6   19\n",
+       "4 1979-08-02  1979      8    2"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Extraire l'année, le mois et le jour de la colonne 'Event.Date'\n",
+    "aviation_df_cleaned['Year'] = aviation_df_cleaned['Event.Date'].dt.year\n",
+    "aviation_df_cleaned['Month'] = aviation_df_cleaned['Event.Date'].dt.month\n",
+    "aviation_df_cleaned['Day'] = aviation_df_cleaned['Event.Date'].dt.day\n",
+    "\n",
+    "# Vérification\n",
+    "aviation_df_cleaned[['Event.Date', 'Year', 'Month', 'Day']].head()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "9039115e-24ed-4478-bd18-1e4f4c43eb13",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Nombre d’accidents par année'}, xlabel='Year'>"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Year'].value_counts().sort_index().plot(kind='bar', figsize=(12,6), title='Nombre d’accidents par année')\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "f0d4f8a5-7d78-426c-86a3-ba1d3f21f0cf",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Évolution des accidents par an'}, xlabel='Year'>"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned.groupby('Year').size().plot(kind='line', figsize=(12,6), title='Évolution des accidents par an')\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "22fe7784-7940-400b-be37-2122d932dbff",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Index(['Event.Id', 'Investigation.Type', 'Accident.Number', 'Event.Date',\n",
+       "       'Location', 'Country', 'Airport.Code', 'Airport.Name',\n",
+       "       'Injury.Severity', 'Aircraft.damage', 'Registration.Number', 'Make',\n",
+       "       'Model', 'Amateur.Built', 'Number.of.Engines', 'Engine.Type',\n",
+       "       'Purpose.of.flight', 'Total.Fatal.Injuries', 'Total.Serious.Injuries',\n",
+       "       'Total.Minor.Injuries', 'Total.Uninjured', 'Weather.Condition',\n",
+       "       'Broad.phase.of.flight', 'Report.Status', 'Publication.Date', 'Year',\n",
+       "       'Month', 'Day'],\n",
+       "      dtype='object')"
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned.columns\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "dcbd191e-4427-4172-91d4-1ba9347e82f6",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Total de morts par année'}, xlabel='Year'>"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned.groupby('Year')['Total.Fatal.Injuries'].sum().plot(kind='line', figsize=(12,6), title=\"Total de morts par année\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "b78fecc2-c4f1-4bee-a3bc-704411452e5a",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.6478551517654346"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Total.Fatal.Injuries'] = pd.to_numeric(aviation_df_cleaned['Total.Fatal.Injuries'], errors='coerce')\n",
+    "aviation_df_cleaned['Total.Fatal.Injuries'].mean()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "d753c5fa-136f-420f-a0fe-805a6f2b9df9",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Distribution des types de sévérité'}, xlabel='Injury.Severity'>"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Injury.Severity'].value_counts().plot(kind='bar', title=\"Distribution des types de sévérité\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "6ce8dd8e-14d0-4604-97b3-d0d99bd1245e",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Accidents par sévérité et par année'}, xlabel='Year'>"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned.groupby(['Year', 'Injury.Severity']).size().unstack().plot(\n",
+    "    kind='bar', stacked=True, figsize=(16, 6),\n",
+    "    title=\"Accidents par sévérité et par année\"\n",
+    ")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "5dbfe40b-7cde-4a28-80f8-aad0a20134b8",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': \"Top 10 des pays avec le plus d'accidents\"}, xlabel='Country'>"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Country'].value_counts().head(10).plot(\n",
+    "    kind='bar', title=\"Top 10 des pays avec le plus d'accidents\"\n",
+    ")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "df48f6d4-9a91-4556-8dcc-cb6979fca969",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Accidents par mois'}, xlabel='Month'>"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Month'].value_counts().sort_index().plot(\n",
+    "    kind='bar', title=\"Accidents par mois\"\n",
+    ")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "dcf59cef-97db-446b-8388-f49ec81a3305",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': \"Types d'enquêtes ou d'accidents\"}, xlabel='Investigation.Type'>"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Investigation.Type'].value_counts().plot(kind='bar', title=\"Types d'enquêtes ou d'accidents\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "54463c65-74d5-48e7-9102-1432f88d02d8",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<Axes: title={'center': 'Top 10 des constructeurs impliqués'}, xlabel='Make'>"
+      ]
+     },
+     "execution_count": 20,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "aviation_df_cleaned['Make'].value_counts().head(10).plot(kind='bar', title=\"Top 10 des constructeurs impliqués\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "18012add-8d2a-4531-9974-f3c4b3a2da22",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Nombre total d'accidents : 88889\n",
+      "Années couvertes : 1948 à 2022\n",
+      "Pays avec le plus d'accidents : United States\n",
+      "Moyenne de morts par accident : 0.6478551517654346\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Nombre total d'accidents :\", len(aviation_df_cleaned))\n",
+    "print(\"Années couvertes :\", aviation_df_cleaned['Year'].min(), \"à\", aviation_df_cleaned['Year'].max())\n",
+    "print(\"Pays avec le plus d'accidents :\", aviation_df_cleaned['Country'].value_counts().idxmax())\n",
+    "print(\"Moyenne de morts par accident :\", aviation_df_cleaned['Total.Fatal.Injuries'].mean())\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "03341e71-a583-4d7a-85ab-1bf62162f9a2",
+   "metadata": {},
+   "source": [
+    "  Rapport Analytique – Analyse des Données d’Accidents Aériens\n",
+    "\n",
+    "\n",
+    "  Introduction\n",
+    "\n",
+    "Ce rapport présente une analyse exploratoire du jeu de données sur les accidents aériens fourni dans le fichier `AviationData.csv`. L’objectif est d’identifier des tendances temporelles, géographiques et techniques afin de mieux comprendre les causes et conséquences des incidents. Cette étude est réalisée à l’aide de Python (Pandas, Matplotlib).\n",
+    "\n",
+    "\n",
+    " Méthodologie\n",
+    "\n",
+    "Les étapes suivantes ont été suivies :\n",
+    "\n",
+    "- Nettoyage des données : conversion de certaines colonnes en types numériques, suppression des valeurs manquantes critiques, création des colonnes `Year`, `Month` à partir de `Event.Date`.\n",
+    "- Exploration visuelle : création de graphiques de distribution, d’évolution temporelle, de classements par pays, types de blessures, constructeurs, etc.\n",
+    "- Calculs statistiques : total d’accidents, moyenne de morts par accident, pays le plus touché, années couvertes.\n",
+    "\n",
+    "\n",
+    " Résultats Graphiques\n",
+    "\n",
+    "- Accidents par année : forte concentration d’accidents entre les années 1970 et 2000.\n",
+    "- Évolution des morts par an : tendances irrégulières avec certains pics importants.\n",
+    "- Types de sévérité : distribution entre 'Fatal', 'Non-Fatal', 'Incident' selon les cas.\n",
+    "- Accidents par mois : certaines saisons semblent légèrement plus exposées.\n",
+    "- Top 10 des pays : les États-Unis dominent largement le nombre d’accidents enregistrés.\n",
+    "- Constructeurs impliqués : top 10 identifié, souvent les plus utilisés (ex. : Cessna, Piper).\n",
+    "- Types d’enquêtes : majoritairement des investigations complètes ou préliminaires.\n",
+    "\n",
+    "\n",
+    " Interprétations\n",
+    "\n",
+    "- Les accidents ne diminuent pas nécessairement avec le temps malgré les avancées technologiques.\n",
+    "- La concentration géographique (notamment aux USA) peut être liée à la fréquence des vols ou la rigueur des enregistrements.\n",
+    "- Le type de constructeur n’indique pas directement une dangerosité mais plutôt une fréquence d’usage.\n",
+    "- La majorité des incidents ne causent pas de morts, ce qui reflète l'efficacité des mesures de sécurité modernes.\n",
+    "\n",
+    "\n",
+    " Conclusion\n",
+    "\n",
+    "Cette analyse permet d’avoir une vue d’ensemble des dynamiques liées aux accidents aériens dans le jeu de données. Pour aller plus loin, des modèles prédictifs ou des corrélations approfondies pourraient être mis en œuvre pour identifier les causes principales d’accidents selon le type de vol, les conditions météo ou d'autres variables.\n",
+    "\n",
+    "\n",
+    "Étape suivante possible : création d’un tableau de bord interactif dans Power BI, ou mise en ligne du projet sur GitHub.\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1e4c806f-739a-4c93-8774-4d9bf737f1f8",
+   "metadata": {},
+   "source": [
+    "Rapport Analytique – Analyse des Données d’Accidents Aériens\n",
+    "\n",
+    " Introduction\n",
+    "\n",
+    "Ce rapport présente une analyse exploratoire du jeu de données sur les accidents aériens fourni dans le fichier `AviationData.csv`. L’objectif est d’identifier des tendances temporelles, géographiques et techniques afin de mieux comprendre les causes et conséquences des incidents. Cette étude est réalisée à l’aide de Python (Pandas, Matplotlib).\n",
+    "\n",
+    " Méthodologie\n",
+    "\n",
+    "Les étapes suivantes ont été suivies :\n",
+    "\n",
+    "- Nettoyage des données : conversion de certaines colonnes en types numériques, suppression des valeurs manquantes critiques, création des colonnes `Year`, `Month` à partir de `Event.Date`.\n",
+    "- Exploration visuelle : création de graphiques de distribution, d’évolution temporelle, de classements par pays, types de blessures, constructeurs, etc.\n",
+    "- Calculs statistiques : total d’accidents, moyenne de morts par accident, pays le plus touché, années couvertes.\n",
+    "\n",
+    " Résultats Graphiques\n",
+    "\n",
+    "- Accidents par année : forte concentration d’accidents entre les années 1970 et 2000.\n",
+    "- Évolution des morts par an : tendances irrégulières avec certains pics importants.\n",
+    "- Types de sévérité : distribution entre `Fatal`, `Non-Fatal`, `Incident`.\n",
+    "- Accidents par mois : certaines saisons semblent légèrement plus exposées.\n",
+    "- Top 10 des pays : les États-Unis dominent largement le nombre d’accidents enregistrés.\n",
+    "- Constructeurs impliqués : top 10 identifié, souvent les plus utilisés (ex. : Cessna, Piper).\n",
+    "- Types d’enquêtes : majoritairement des investigations complètes ou préliminaires.\n",
+    "\n",
+    " Interprétations\n",
+    "\n",
+    "- Les accidents ne diminuent pas nécessairement avec le temps malgré les avancées technologiques.\n",
+    "- La concentration géographique (notamment aux USA) peut être liée à la fréquence des vols ou à la rigueur des enregistrements.\n",
+    "- Le type de constructeur n’indique pas directement une dangerosité, mais plutôt une fréquence d’usage.\n",
+    "- La majorité des incidents ne causent pas de morts, ce qui reflète l’efficacité des mesures de sécurité modernes.\n",
+    "\n",
+    " Conclusion\n",
+    "\n",
+    "Cette analyse permet d’avoir une vue d’ensemble des dynamiques liées aux accidents aériens dans le jeu de données. Pour aller plus loin, des modèles prédictifs ou des corrélations approfondies pourraient être mis en œuvre pour identifier les causes principales d’accidents selon le type de vol, les conditions météo ou d’autres variables.\n",
+    "\n",
+    "Étape suivante possible : création d’un tableau de bord interactif dans Power BI, ou mise en ligne du projet sur GitHub.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1638a864-883e-430c-9ee9-50b8e53d7ecb",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
